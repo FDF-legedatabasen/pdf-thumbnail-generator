@@ -1,6 +1,9 @@
 # PDF Stack Thumbnail Generator
 
 A lightweight, client-side web application for generating layered, fanned, and drop-shadowed thumbnail images from PDF files. Built with vanilla HTML, CSS, and JavaScript (powered by Mozilla's `PDF.js`) so it runs directly on **GitHub Pages** with zero build steps.
+Can be view live on: https://fdf-legedatabasen.github.io/pdf-thumbnail-generator/
+<img width="2544" height="1308" alt="image" src="https://github.com/user-attachments/assets/27a768fe-bd42-4c33-9c55-833cc439641f" />
+
 
 ## Features
 - **100% Client-Side Privacy:** PDFs never leave your browser.
