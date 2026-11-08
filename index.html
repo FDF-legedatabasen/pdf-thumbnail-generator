@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Stacked Thumbnail Generator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="12" height="16" rx="2" transform="rotate(-6 10 10)" />
+            <rect x="8" y="6" width="12" height="16" rx="2" />
+          </svg>
+        </div>
+        <div>
+          <h1>PDF Stack Thumbnail Generator</h1>
+          <p class="subtitle">Generate layered, drop-shadowed page stacks for PDFs — 100% in your browser</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <label for="pdf-file-input" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span>Upload PDF</span>
+        </label>
+        <input type="file" id="pdf-file-input" accept="application/pdf,.pdf" hidden />
+        <button type="button" id="load-demo-btn" class="btn btn-ghost" title="Load the sample 3-card E/G stack">
+          Load Demo Cards
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <!-- Left/Center: Preview & Dropzone -->
+      <section class="preview-stage" id="dropzone" aria-label="PDF Dropzone and Live Preview">
+        <!-- Floating File Info Bar -->
+        <div class="stage-toolbar">
+          <div class="file-badge" id="file-badge">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="file-name-label">Demo Cards (3 pages)</span>
+            <span class="page-count-pill" id="total-pages-pill">3 pages total</span>
+          </div>
+
+          <div class="stage-meta">
+            <span id="canvas-dimensions-readout" class="meta-pill">1200 × 1200 px</span>
+            <button type="button" id="preset-reference-btn" class="btn btn-xs" title="Match the reference image style">
+              Reference Preset
+            </button>
+            <button type="button" id="preset-clean-btn" class="btn btn-xs" title="Clean paper stack without dotted borders">
+              Clean Paper Preset
+            </button>
+          </div>
+        </div>
+
+        <!-- Canvas Viewport -->
+        <div class="canvas-viewport" id="canvas-viewport">
+          <div class="canvas-checkerboard" id="canvas-container">
+            <canvas id="thumbnail-canvas" width="1200" height="1200"></canvas>
+          </div>
+
+          <!-- Drag Overlay -->
+          <div class="drop-overlay" id="drop-overlay" aria-hidden="true">
+            <div class="drop-overlay-box">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="12" y1="18" x2="12" y2="12"/>
+                <polyline points="9 15 12 12 15 15"/>
+              </svg>
+              <p class="drop-title">Drop your PDF here</p>
+              <p class="drop-hint">Processed locally in your browser</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Quick Export Bar -->
+        <div class="export-bar">
+          <div class="export-info">
+            <div class="size-estimates">
+              <span class="size-badge">PNG: <strong id="png-size-est">…</strong></span>
+              <span class="size-badge highlight">WebP (<span id="webp-q-badge">80</span>%): <strong id="webp-size-est">…</strong></span>
+              <span class="savings-badge" id="savings-badge"></span>
+            </div>
+          </div>
+          <div class="export-buttons">
+            <button type="button" id="download-png-btn" class="btn btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download PNG
+            </button>
+            <button type="button" id="download-webp-btn" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download WebP
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar: Controls -->
+      <aside class="controls-sidebar" aria-label="Thumbnail Customization Controls">
+        <div class="sidebar-header">
+          <h2>Customize Stack</h2>
+          <button type="button" id="reset-defaults-btn" class="btn-link">Reset all</button>
+        </div>
+
+        <div class="controls-scroll">
+          <!-- Section 1: Pages & Stack Order -->
+          <details class="control-group" open>
+            <summary class="group-title">
+              <span>1. Pages &amp; Stack Order</span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="group-body">
+              <div class="field">
+                <div class="field-header">
+                  <label for="page-count-slider">Number of Pages (First X)</label>
+                  <output id="page-count-val" for="page-count-slider">3</output>
+                </div>
+                <input type="range" id="page-count-slider" min="1" max="8" step="1" value="3" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="custom-pages-input">Or Specific Pages</label>
+                  <span class="field-hint">e.g. <code>1, 2, 4</code> or <code>1-3</code></span>
+                </div>
+                <input type="text" id="custom-pages-input" class="text-input" placeholder="Leave blank for first X pages" />
+              </div>
+
+              <div class="field">
+                <label for="z-order-select">Layer Order</label>
+                <select id="z-order-select" class="select-input">
+                  <option value="first-on-top" selected>Page 1 on Top (Front-to-Back)</option>
+                  <option value="last-on-top">Last Page on Top (Back-to-Front)</option>
+                </select>
+              </div>
+            </div>
+          </details>
+
+          <!-- Section 2: Rotation & Spread -->
+          <details class="control-group" open>
+            <summary class="group-title">
+              <span>2. Rotation &amp; Spread</span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="group-body">
+              <div class="field">
+                <div class="field-header">
+                  <label for="base-angle-slider">First Page Angle</label>
+                  <output id="base-angle-val" for="base-angle-slider">-9°</output>
+                </div>
+                <input type="range" id="base-angle-slider" min="-45" max="45" step="0.5" value="-9" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="step-angle-slider">Rotation Step per Page</label>
+                  <output id="step-angle-val" for="step-angle-slider">+4°</output>
+                </div>
+                <input type="range" id="step-angle-slider" min="-25" max="25" step="0.5" value="4" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="offset-x-slider">Horizontal Spread (X)</label>
+                  <output id="offset-x-val" for="offset-x-slider">32%</output>
+                </div>
+                <input type="range" id="offset-x-slider" min="-80" max="80" step="1" value="32" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="offset-y-slider">Vertical Spread (Y)</label>
+                  <output id="offset-y-val" for="offset-y-slider">24%</output>
+                </div>
+                <input type="range" id="offset-y-slider" min="-80" max="80" step="1" value="24" />
+              </div>
+            </div>
+          </details>
+
+          <!-- Section 3: Drop Shadow & Border -->
+          <details class="control-group" open>
+            <summary class="group-title">
+              <span>3. Drop Shadow &amp; Border</span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="group-body">
+              <div class="field">
+                <div class="field-header">
+                  <label for="shadow-blur-slider">Shadow Blur</label>
+                  <output id="shadow-blur-val" for="shadow-blur-slider">24px</output>
+                </div>
+                <input type="range" id="shadow-blur-slider" min="0" max="80" step="1" value="24" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="shadow-opacity-slider">Shadow Opacity</label>
+                  <output id="shadow-opacity-val" for="shadow-opacity-slider">28%</output>
+                </div>
+                <input type="range" id="shadow-opacity-slider" min="0" max="100" step="1" value="28" />
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <div class="field-header">
+                    <label for="shadow-x-slider">Shadow X</label>
+                    <output id="shadow-x-val" for="shadow-x-slider">4px</output>
+                  </div>
+                  <input type="range" id="shadow-x-slider" min="-40" max="40" step="1" value="4" />
+                </div>
+                <div class="field">
+                  <div class="field-header">
+                    <label for="shadow-y-slider">Shadow Y</label>
+                    <output id="shadow-y-val" for="shadow-y-slider">10px</output>
+                  </div>
+                  <input type="range" id="shadow-y-slider" min="-40" max="40" step="1" value="10" />
+                </div>
+              </div>
+
+              <hr class="divider" />
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="border-style-select">Border Style</label>
+                  <select id="border-style-select" class="select-input">
+                    <option value="none" selected>None</option>
+                    <option value="dotted">Dotted (Cutout)</option>
+                    <option value="solid">Solid Line</option>
+                    <option value="dashed">Dashed Line</option>
+                  </select>
+                </div>
+                <div class="field field-color">
+                  <label for="border-color-input">Color</label>
+                  <input type="color" id="border-color-input" value="#757575" class="color-input" />
+                </div>
+              </div>
+
+              <div class="field" id="border-width-field">
+                <div class="field-header">
+                  <label for="border-width-slider">Border Thickness</label>
+                  <output id="border-width-val" for="border-width-slider">4px</output>
+                </div>
+                <input type="range" id="border-width-slider" min="1" max="16" step="0.5" value="4" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="corner-radius-slider">Corner Radius</label>
+                  <output id="corner-radius-val" for="corner-radius-slider">0px</output>
+                </div>
+                <input type="range" id="corner-radius-slider" min="0" max="40" step="1" value="0" />
+              </div>
+            </div>
+          </details>
+
+          <!-- Section 4: Canvas & Output -->
+          <details class="control-group" open>
+            <summary class="group-title">
+              <span>4. Canvas &amp; Export</span>
+              <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </summary>
+            <div class="group-body">
+              <div class="field">
+                <label for="canvas-preset-select">Canvas Aspect / Size</label>
+                <select id="canvas-preset-select" class="select-input">
+                  <option value="auto" selected>Auto-Fit Tight Stack</option>
+                  <optgroup label="Square (1:1)">
+                    <option value="300x300">300 × 300 px (Small Square)</option>
+                    <option value="400x400">400 × 400 px (Compact Square)</option>
+                    <option value="500x500">500 × 500 px (Standard Thumbnail)</option>
+                    <option value="600x600">600 × 600 px (Medium Square)</option>
+                    <option value="800x800">800 × 800 px (Large Square)</option>
+                    <option value="1000x1000">1000 × 1000 px (HD Square)</option>
+                    <option value="1200x1200">1200 × 1200 px (XL Square)</option>
+                    <option value="1600x1600">1600 × 1600 px (Hi-Res Square)</option>
+                  </optgroup>
+                  <optgroup label="Portrait">
+                    <option value="450x600">450 × 600 px (3:4 Small)</option>
+                    <option value="600x800">600 × 800 px (3:4 Medium)</option>
+                    <option value="900x1200">900 × 1200 px (3:4 Large)</option>
+                    <option value="500x700">500 × 700 px (5:7 Document)</option>
+                    <option value="800x1000">800 × 1000 px (4:5 Social)</option>
+                  </optgroup>
+                  <optgroup label="Landscape">
+                    <option value="600x450">600 × 450 px (4:3 Small)</option>
+                    <option value="800x600">800 × 600 px (4:3 Medium)</option>
+                    <option value="1200x900">1200 × 900 px (4:3 Large)</option>
+                    <option value="800x450">800 × 450 px (16:9 Compact)</option>
+                    <option value="1200x630">1200 × 630 px (OpenGraph / Social)</option>
+                    <option value="1280x720">1280 × 720 px (16:9 HD)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="field" id="auto-scale-field">
+                <div class="field-header">
+                  <label for="output-scale-slider">Resolution Scale</label>
+                  <output id="output-scale-val" for="output-scale-slider">1200px</output>
+                </div>
+                <input type="range" id="output-scale-slider" min="300" max="2400" step="50" value="1200" />
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="padding-slider">Outer Margin / Padding</label>
+                  <output id="padding-val" for="padding-slider">6%</output>
+                </div>
+                <input type="range" id="padding-slider" min="0" max="25" step="1" value="6" />
+              </div>
+
+              <div class="field-row">
+                <div class="field">
+                  <label for="bg-mode-select">Background</label>
+                  <select id="bg-mode-select" class="select-input">
+                    <option value="transparent" selected>Transparent</option>
+                    <option value="solid">Solid Color</option>
+                  </select>
+                </div>
+                <div class="field field-color" id="bg-color-field" style="display: none;">
+                  <label for="bg-color-input">BG Color</label>
+                  <input type="color" id="bg-color-input" value="#ffffff" class="color-input" />
+                </div>
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <label for="webp-quality-slider">WebP Compression Quality</label>
+                  <output id="webp-quality-val" for="webp-quality-slider">80%</output>
+                </div>
+                <input type="range" id="webp-quality-slider" min="10" max="100" step="1" value="80" />
+              </div>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
